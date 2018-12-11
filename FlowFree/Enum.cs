@@ -13,7 +13,8 @@ namespace FlowFree
     public enum PieceType
     {
         Dot,
-        Line
+        Line,
+        Turn
     }
     public enum Direction
     {

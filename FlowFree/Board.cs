@@ -23,18 +23,13 @@ namespace FlowFree
         Direction PrevDirection;
         Vector2 PrevPos;
 
-        List<Sprite> Circles;
-        Texture2D CircleTexture;
-
+        float globalRot = 0f;
+    
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
         {
             CellSize = bounds.Width / cols;
-
-            Circles = new List<Sprite>();
-
-            CircleTexture = content.Load<Texture2D>("FlowCorner");
-            
+    
             Test();
         }
 
@@ -100,14 +95,6 @@ namespace FlowFree
                                 }
                             }
                         }
-                        for (int i = 0; i < Circles.Count; i++)
-                        {
-                            if (Circles[i].Color == currColor)
-                            {
-                                Circles.RemoveAt(i);
-                                i--;
-                            }
-                        }
                         #endregion
                     }
                 }
@@ -118,7 +105,7 @@ namespace FlowFree
             adding = !(Game1.MouseState.LeftButton == ButtonState.Released);
 
             (int currCol, int currRow) = MouseCell();
-         
+
             bool isFirstLineBeingAdded = true;
 
             for (int row = 0; row < Rows; row++)
@@ -146,11 +133,10 @@ namespace FlowFree
             }
 
             #region FigureOutDirection
-            if (currRow == vectorToCheck.X && currCol == vectorToCheck.Y)
+            if (currCol == vectorToCheck.X && currRow == vectorToCheck.Y)
             {
                 return;
             }
-
 
             if (currCol > vectorToCheck.X)
             {
@@ -170,36 +156,32 @@ namespace FlowFree
             }
             #endregion
 
-            Game1.Title = $"{PrevPos.X}{PrevPos.Y}";
-            
-            float turnrotation = 0f;
-            float rotation = 0f;
-
+            Game1.Title = $"Prev: ({PrevPos.X},{PrevPos.Y}) Curr: ({currCol},{currRow})";
+         
             if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
             {
-                Vector2 pos = new Vector2(currCol * CellSize, currRow * CellSize);
+                Point pos = PrevPos.ToPoint();
+
                 switch (CurrDirection)
                 {
                     case Direction.Up:
-                        rotation = 0f;
+                        globalRot = 0f;
                         break;
                     case Direction.Down:
-                        rotation = 0f;
-                       break;
+                        globalRot = 0f;
+                        break;
                     case Direction.Left:
-                        rotation = 90f;
+                        globalRot = 90f;
                         break;
                     case Direction.Right:
-                        pos.X -= CellSize / 2 + 20;
-                        pos.Y += CellSize / 2 + 20;
-                        rotation = 90f;
+                        globalRot = 90f;
                         break;
                 }
-                Circles.Add(new Sprite(CircleTexture, pos, currColor, Scale.ToVector2()));
-                Circles[Circles.Count - 1].Rotation = turnrotation.ToRadians();
-            } 
 
-            Grid[currRow, currCol] = new FlowPiece(currColor, PieceType.Line, rotation);
+                 Grid[pos.Y, pos.X] = new FlowPiece(currColor, PieceType.Turn, 0f);
+            }
+
+            Grid[currRow, currCol] = new FlowPiece(currColor, PieceType.Line, globalRot);
             PrevPos = new Vector2(currCol, currRow);
             PrevDirection = CurrDirection;
         }
@@ -223,7 +205,7 @@ namespace FlowFree
                         case PieceType.Dot:
                             pos = new Vector2(col * CellSize + CellSize / 2, row * CellSize + CellSize / 2);
                             break;
-
+                            
                         case PieceType.Line:
                             switch (piece.Rotation)
                             {
@@ -236,17 +218,16 @@ namespace FlowFree
                                     break;
                             }
                             break;
+
+                        case PieceType.Turn:
+                            pos = new Vector2(col * CellSize + CellSize / 2 + Game1.TurnTexture.Width / 2, row * CellSize + CellSize / 2 - Game1.TurnTexture.Height / 2);
+                            break;
                     }
                     sb.Draw(texture, pos, null, piece.Color, piece.Rotation.ToRadians(), new Vector2(texture.Width / 2, texture.Height / 2), Scale.ToVector2(), SpriteEffects.None, 0f);
                 }
             }
 
-            foreach (var circle in Circles)
-            {
-                circle.Draw(sb);
-            }
-
-
+       
             base.Draw(sb);
         }
     }

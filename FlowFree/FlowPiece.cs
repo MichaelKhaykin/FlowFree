@@ -25,7 +25,8 @@ namespace FlowFree
             PieceTexture = new Dictionary<PieceType, Texture2D>()
             {
                 [PieceType.Dot] = Game1.DotTexture,
-                [PieceType.Line] = Game1.LineTexture
+                [PieceType.Line] = Game1.LineTexture,
+                [PieceType.Turn] = Game1.TurnTexture
             };
         }
     }
