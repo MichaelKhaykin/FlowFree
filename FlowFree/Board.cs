@@ -100,15 +100,15 @@ namespace FlowFree
                     for (int i = 0; i < Grid.Count; i++)
                     {
                         var kvp = Grid.ElementAt(i);
-                        if(kvp.Value.Color == currColor && kvp.Value.PieceType != PieceType.Dot)
+                        if (kvp.Value.Color == currColor && kvp.Value.PieceType != PieceType.Dot)
                         {
                             Grid.Remove((kvp.Key.x, kvp.Key.y));
                             i--;
                         }
                     }
-                    for(int i = 0; i < Circles.Count; i++)
+                    for (int i = 0; i < Circles.Count; i++)
                     {
-                        if(Circles[i].Color == currColor)
+                        if (Circles[i].Color == currColor)
                         {
                             Circles.RemoveAt(i);
                             i--;
@@ -118,167 +118,166 @@ namespace FlowFree
                 }
             }
 
-            if (adding)
+            if (!adding) return;
+
+            adding = !(Game1.MouseState.LeftButton == ButtonState.Released);
+
+            (int mX, int mY) = MouseCell();
+
+            bool isFirstLineBeingAdded = true;
+            foreach (var cell in Grid)
             {
-                adding = !(Game1.MouseState.LeftButton == ButtonState.Released);
-
-                (int mX, int mY) = MouseCell();
-
-                bool isFirstLineBeingAdded = true;
-                foreach (var cell in Grid)
+                if (cell.Value.PieceType != PieceType.Dot && cell.Value.Color == currColor)
                 {
-                    if (cell.Value.PieceType != PieceType.Dot && cell.Value.Color == currColor)
+                    isFirstLineBeingAdded = false;
+                }
+            }
+
+            Vector2 vectorToCheck = Vector2.One;
+
+            if (isFirstLineBeingAdded)
+            {
+                vectorToCheck = CurrStartPos;
+            }
+            else
+            {
+                vectorToCheck = PrevPos;
+            }
+
+            #region FigureOutDirection
+            if (mX == vectorToCheck.X && mY == vectorToCheck.Y)
+            {
+                return;
+            }
+
+            bool hasDirectionBeenChosen = false;
+
+            Direction directionChosen = Direction.None;
+
+            if (mX > vectorToCheck.X)
+            {
+                CurrDirection = Direction.Right;
+                if (PrevDirection == CurrDirection)
+                {
+                    var offSetX = mX - 0.5f;
+                    if (offSetX > vectorToCheck.X)
                     {
-                        isFirstLineBeingAdded = false;
+                        hasDirectionBeenChosen = true;
                     }
                 }
 
-                Vector2 vectorToCheck = Vector2.One;
-
-                if (isFirstLineBeingAdded)
+                directionChosen = CurrDirection;
+            }
+            else if (mX < vectorToCheck.X && !hasDirectionBeenChosen)
+            {
+                CurrDirection = Direction.Left;
+                if (PrevDirection == CurrDirection)
                 {
-                    vectorToCheck = CurrStartPos;
-                }
-                else
-                {
-                    vectorToCheck = PrevPos;
-                }
-
-                #region FigureOutDirection
-                if (mX == vectorToCheck.X && mY == vectorToCheck.Y)
-                {
-                    return;
-                }
-
-                bool hasDirectionBeenChosen = false;
-
-                Direction directionChosen = Direction.None;
-
-                if (mX > vectorToCheck.X)
-                {
-                    CurrDirection = Direction.Right;
-                    if(PrevDirection == CurrDirection)
+                    var offSetX = mX + 0.5f;
+                    if (offSetX < vectorToCheck.X)
                     {
-                        var offSetX = mX - 0.5f;
-                        if(offSetX > vectorToCheck.X)
-                        {
-                            hasDirectionBeenChosen = true;
-                        }
+                        hasDirectionBeenChosen = true;
                     }
-
-                    directionChosen = CurrDirection;
-                }
-                else if (mX < vectorToCheck.X && !hasDirectionBeenChosen)
-                {
-                    CurrDirection = Direction.Left;
-                    if (PrevDirection == CurrDirection)
+                    else
                     {
-                        var offSetX = mX + 0.5f;
-                        if (offSetX < vectorToCheck.X)
-                        {
-                            hasDirectionBeenChosen = true;
-                        }
-                        else
-                        {
-                            CurrDirection = directionChosen;
-                        }
-                    }
-
-                    directionChosen = CurrDirection;
-                }
-                if (mY > vectorToCheck.Y && !hasDirectionBeenChosen)
-                {
-                    CurrDirection = Direction.Down;
-                    if(PrevDirection == CurrDirection)
-                    {
-                        var offsetY = mY - 0.5f;
-                        if(offsetY > vectorToCheck.Y)
-                        {
-                            hasDirectionBeenChosen = true;
-                        }
-                        else
-                        {
-                            CurrDirection = directionChosen;
-                        }
-                    }
-
-                    directionChosen = CurrDirection;
-                }
-                else if (mY < vectorToCheck.Y && !hasDirectionBeenChosen)
-                {
-                    CurrDirection = Direction.Up;
-                    if(PrevDirection == CurrDirection)
-                    {
-                        var offsetY = mY + 0.5f;
-                        if(offsetY < vectorToCheck.Y)
-                        {
-                            hasDirectionBeenChosen = true;
-                        }
-                        else
-                        {
-                            CurrDirection = directionChosen;
-                        }
+                        CurrDirection = directionChosen;
                     }
                 }
-                #endregion
 
-                Vector2 addPos = Vector2.One * -1;
-                float rotation = 0f;
-
-             
-                Game1.Title = $"{CurrDirection}";
-                switch (CurrDirection)
+                directionChosen = CurrDirection;
+            }
+            if (mY > vectorToCheck.Y && !hasDirectionBeenChosen)
+            {
+                CurrDirection = Direction.Down;
+                if (PrevDirection == CurrDirection)
                 {
-                    case Direction.Up:
-                        addPos = new Vector2(mX, mY + 0.5f);
-                        break;
-
-                    case Direction.Down:
-                        addPos = new Vector2(mX, mY - 0.5f);
-                        break;
-
-                    case Direction.Left:
-                        addPos = new Vector2(mX + 0.5f, mY);
-                        rotation = 90;
-                        break;
-
-                    case Direction.Right:
-                        addPos = new Vector2(mX - 0.5f, mY);
-                        rotation = 90;
-                        break;
-                }
-
-
-                if (addPos.X >= 0 && addPos.Y >= 0)
-                {
-                    //add circle
-                    if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
+                    var offsetY = mY - 0.5f;
+                    if (offsetY > vectorToCheck.Y)
                     {
-                        Vector2 pos = new Vector2(addPos.X * CellSize, addPos.Y * CellSize);
-                        switch (CurrDirection)
-                        {
-                            case Direction.Up:
-                                pos.X += CellSize / 2;
-                                pos.Y += CellSize;
-                                break;
-                            case Direction.Down:
-                                pos.X += CellSize / 2;
-                                break;
-                            case Direction.Left:
-                                pos.X += CellSize;
-                                pos.Y += CellSize / 2;
-                                break;
-                            case Direction.Right:
-                                pos.Y += CellSize / 2;
-                                break;
-                        }
-                        Circles.Add(new Sprite(CircleTexture, pos, currColor, Vector2.One * 2));
+                        hasDirectionBeenChosen = true;
                     }
-
-                    Grid[(addPos.X, addPos.Y)] = new FlowPiece(currColor, PieceType.Line, rotation);
-                    PrevPos = addPos;
-                    PrevDirection = CurrDirection;
+                    else
+                    {
+                        CurrDirection = directionChosen;
+                    }
                 }
+
+                directionChosen = CurrDirection;
+            }
+            else if (mY < vectorToCheck.Y && !hasDirectionBeenChosen)
+            {
+                CurrDirection = Direction.Up;
+                if (PrevDirection == CurrDirection)
+                {
+                    var offsetY = mY + 0.5f;
+                    if (offsetY < vectorToCheck.Y)
+                    {
+                        hasDirectionBeenChosen = true;
+                    }
+                    else
+                    {
+                        CurrDirection = directionChosen;
+                    }
+                }
+            }
+            #endregion
+
+            Vector2 addPos = Vector2.One * -1;
+            float rotation = 0f;
+
+
+            Game1.Title = $"{CurrDirection}";
+            switch (CurrDirection)
+            {
+                case Direction.Up:
+                    addPos = new Vector2(mX, mY + 0.5f);
+                    break;
+
+                case Direction.Down:
+                    addPos = new Vector2(mX, mY - 0.5f);
+                    break;
+
+                case Direction.Left:
+                    addPos = new Vector2(mX + 0.5f, mY);
+                    rotation = 90;
+                    break;
+
+                case Direction.Right:
+                    addPos = new Vector2(mX - 0.5f, mY);
+                    rotation = 90;
+                    break;
+            }
+
+
+            if (addPos.X >= 0 && addPos.Y >= 0)
+            {
+                //add circle
+                if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
+                {
+                    Vector2 pos = new Vector2(addPos.X * CellSize, addPos.Y * CellSize);
+                    switch (CurrDirection)
+                    {
+                        case Direction.Up:
+                            pos.X += CellSize / 2;
+                            pos.Y += CellSize;
+                            break;
+                        case Direction.Down:
+                            pos.X += CellSize / 2;
+                            break;
+                        case Direction.Left:
+                            pos.X += CellSize;
+                            pos.Y += CellSize / 2;
+                            break;
+                        case Direction.Right:
+                            pos.Y += CellSize / 2;
+                            break;
+                    }
+                    Circles.Add(new Sprite(CircleTexture, pos, currColor, Scale.ToVector2()));
+                }
+
+                Grid[(addPos.X, addPos.Y)] = new FlowPiece(currColor, PieceType.Line, rotation);
+                PrevPos = addPos;
+                PrevDirection = CurrDirection;
             }
         }
 
