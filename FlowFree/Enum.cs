@@ -14,7 +14,8 @@ namespace FlowFree
     {
         Dot,
         Line,
-        Empty
+        Empty,
+        LilDot
     }
     public enum Direction
     {

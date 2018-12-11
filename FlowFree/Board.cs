@@ -1,5 +1,6 @@
 ﻿using MichaelLibrary;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -22,10 +23,17 @@ namespace FlowFree
         Direction PrevDirection;
         Vector2 PrevPos;
 
-        public Board(int rows, int cols, int gridCellSize, Rectangle bounds)
+        List<Sprite> Circles;
+        Texture2D CircleTexture;
+
+        public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
         {
             CellSize = bounds.Width / cols;
+
+            Circles = new List<Sprite>();
+
+            CircleTexture = content.Load<Texture2D>("CircleFlow");
 
             InitBoard();
             Test();
@@ -35,6 +43,8 @@ namespace FlowFree
         {
             Grid[(0, 0)] = new FlowPiece(Color.Red, PieceType.Dot, 0);
             Grid[(2, 2)] = new FlowPiece(Color.Red, PieceType.Dot, 0);
+            Grid[(1, 1)] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
+            Grid[(4, 4)] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
             /*
             Grid[(0, 0.5)] = new FlowPiece(Color.Red, PieceType.Line, 0);
             Grid[(0, 1.5)] = new FlowPiece(Color.Red, PieceType.Line, 0);
@@ -73,16 +83,38 @@ namespace FlowFree
 
         public override void Update(GameTime gameTime)
         {
-            foreach (var cell in Grid)
+            for (int index = 0; index < Grid.Count; index++)
             {
+                var cell = Grid.ElementAt(index);
+
                 if (cell.Value.PieceType != PieceType.Dot) continue;
 
                 var hitBox = new Rectangle((int)(cell.Key.x * CellSize), (int)(cell.Key.y * CellSize), CellSize, CellSize);
-                if (hitBox.Contains(Game1.MouseState.Position) && Game1.MouseState.LeftButton == ButtonState.Pressed)
+                if (hitBox.Contains(Game1.MouseState.Position) && Game1.MouseState.LeftButton == ButtonState.Pressed && !adding)
                 {
                     CurrStartPos = new Vector2((float)cell.Key.x, (float)cell.Key.y);
                     currColor = cell.Value.Color;
                     adding = true;
+
+                    #region RemovePath and Circles
+                    for (int i = 0; i < Grid.Count; i++)
+                    {
+                        var kvp = Grid.ElementAt(i);
+                        if(kvp.Value.Color == currColor && kvp.Value.PieceType != PieceType.Dot)
+                        {
+                            Grid.Remove((kvp.Key.x, kvp.Key.y));
+                            i--;
+                        }
+                    }
+                    for(int i = 0; i < Circles.Count; i++)
+                    {
+                        if(Circles[i].Color == currColor)
+                        {
+                            Circles.RemoveAt(i);
+                            i--;
+                        }
+                    }
+                    #endregion
                 }
             }
 
@@ -154,7 +186,6 @@ namespace FlowFree
 
                     directionChosen = CurrDirection;
                 }
-                Game1.Title = hasDirectionBeenChosen.ToString();
                 if (mY > vectorToCheck.Y && !hasDirectionBeenChosen)
                 {
                     CurrDirection = Direction.Down;
@@ -193,7 +224,9 @@ namespace FlowFree
 
                 Vector2 addPos = Vector2.One * -1;
                 float rotation = 0f;
-                
+
+             
+                Game1.Title = $"{CurrDirection}";
                 switch (CurrDirection)
                 {
                     case Direction.Up:
@@ -214,9 +247,34 @@ namespace FlowFree
                         rotation = 90;
                         break;
                 }
-                
+
+
                 if (addPos.X >= 0 && addPos.Y >= 0)
                 {
+                    //add circle
+                    if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
+                    {
+                        Vector2 pos = new Vector2(addPos.X * CellSize, addPos.Y * CellSize);
+                        switch (CurrDirection)
+                        {
+                            case Direction.Up:
+                                pos.X += CellSize / 2;
+                                pos.Y += CellSize;
+                                break;
+                            case Direction.Down:
+                                pos.X += CellSize / 2;
+                                break;
+                            case Direction.Left:
+                                pos.X += CellSize;
+                                pos.Y += CellSize / 2;
+                                break;
+                            case Direction.Right:
+                                pos.Y += CellSize / 2;
+                                break;
+                        }
+                        Circles.Add(new Sprite(CircleTexture, pos, currColor, Vector2.One * 2));
+                    }
+
                     Grid[(addPos.X, addPos.Y)] = new FlowPiece(currColor, PieceType.Line, rotation);
                     PrevPos = addPos;
                     PrevDirection = CurrDirection;
@@ -226,8 +284,6 @@ namespace FlowFree
 
         public override void Draw(SpriteBatch sb)
         {
-            Game1.Title = $"{IsBoardFull()}";
-
             foreach (var cell in Grid)
             {
                 var piece = cell.Value;
@@ -262,6 +318,12 @@ namespace FlowFree
                 sb.Draw(texture, pos, null, piece.Color, piece.Rotation.ToRadians(), new Vector2(texture.Width / 2, texture.Height / 2), Scale.ToVector2(), SpriteEffects.None, 0f);
 
             }
+
+            foreach (var circle in Circles)
+            {
+                circle.Draw(sb);
+            }
+
 
             base.Draw(sb);
         }
