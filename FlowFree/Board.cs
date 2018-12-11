@@ -33,35 +33,23 @@ namespace FlowFree
 
             Circles = new List<Sprite>();
 
-            CircleTexture = content.Load<Texture2D>("CircleFlow");
-
-            InitBoard();
+            CircleTexture = content.Load<Texture2D>("FlowCorner");
+            
             Test();
         }
 
         private void Test()
         {
-            Grid[(0, 0)] = new FlowPiece(Color.Red, PieceType.Dot, 0);
-            Grid[(2, 2)] = new FlowPiece(Color.Red, PieceType.Dot, 0);
-            Grid[(1, 1)] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
-            Grid[(4, 4)] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
+            Grid[0, 0] = new FlowPiece(Color.Red, PieceType.Dot, 0);
+            Grid[2, 2] = new FlowPiece(Color.Red, PieceType.Dot, 0);
+            Grid[1, 1] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
+            Grid[4, 4] = new FlowPiece(Color.Blue, PieceType.Dot, 0);
             /*
             Grid[(0, 0.5)] = new FlowPiece(Color.Red, PieceType.Line, 0);
             Grid[(0, 1.5)] = new FlowPiece(Color.Red, PieceType.Line, 0);
             Grid[(0.5, 2)] = new FlowPiece(Color.Red, PieceType.Line, 90);
             Grid[(1.5, 2)] = new FlowPiece(Color.Red, PieceType.Line, 90);
             */
-        }
-
-        private void InitBoard()
-        {
-            for (int i = 0; i < Bounds.Width / CellSize; i++)
-            {
-                for (int j = 0; j < Bounds.Height / CellSize; j++)
-                {
-                    Grid[(i, j)] = new FlowPiece(Color.Transparent, PieceType.Empty, 0f);
-                }
-            }
         }
 
         private (int, int) MouseCell()
@@ -73,7 +61,7 @@ namespace FlowFree
         {
             foreach (var cell in Grid)
             {
-                if (cell.Value.PieceType == PieceType.Empty)
+                if (cell == null)
                 {
                     return false;
                 }
@@ -83,38 +71,45 @@ namespace FlowFree
 
         public override void Update(GameTime gameTime)
         {
-            for (int index = 0; index < Grid.Count; index++)
+            for (int row = 0; row < Rows; row++)
             {
-                var cell = Grid.ElementAt(index);
-
-                if (cell.Value.PieceType != PieceType.Dot) continue;
-
-                var hitBox = new Rectangle((int)(cell.Key.x * CellSize), (int)(cell.Key.y * CellSize), CellSize, CellSize);
-                if (hitBox.Contains(Game1.MouseState.Position) && Game1.MouseState.LeftButton == ButtonState.Pressed && !adding)
+                for (int col = 0; col < Cols; col++)
                 {
-                    CurrStartPos = new Vector2((float)cell.Key.x, (float)cell.Key.y);
-                    currColor = cell.Value.Color;
-                    adding = true;
+                    var cell = Grid[row, col];
+                    if (cell == null || cell.PieceType != PieceType.Dot) continue;
 
-                    #region RemovePath and Circles
-                    for (int i = 0; i < Grid.Count; i++)
+                    var hitBox = new Rectangle(col * CellSize, row * CellSize, CellSize, CellSize);
+                    if (hitBox.Contains(Game1.MouseState.Position) && Game1.MouseState.LeftButton == ButtonState.Pressed && !adding)
                     {
-                        var kvp = Grid.ElementAt(i);
-                        if (kvp.Value.Color == currColor && kvp.Value.PieceType != PieceType.Dot)
+                        CurrStartPos = new Vector2(col, row);
+                        CurrDirection = Direction.None;
+
+                        currColor = cell.Color;
+                        adding = true;
+                        
+                        #region RemovePath and Circles
+                        for (int i = 0; i < Rows; i++)
                         {
-                            Grid.Remove((kvp.Key.x, kvp.Key.y));
-                            i--;
+                            for (int j = 0; j < Cols; j++)
+                            {
+                                var currcell = Grid[i, j];
+                                if (currcell == null) continue;
+                                if (currcell.Color == currColor && currcell.PieceType != PieceType.Dot)
+                                {
+                                    Grid[i, j] = null;
+                                }
+                            }
                         }
-                    }
-                    for (int i = 0; i < Circles.Count; i++)
-                    {
-                        if (Circles[i].Color == currColor)
+                        for (int i = 0; i < Circles.Count; i++)
                         {
-                            Circles.RemoveAt(i);
-                            i--;
+                            if (Circles[i].Color == currColor)
+                            {
+                                Circles.RemoveAt(i);
+                                i--;
+                            }
                         }
+                        #endregion
                     }
-                    #endregion
                 }
             }
 
@@ -122,14 +117,20 @@ namespace FlowFree
 
             adding = !(Game1.MouseState.LeftButton == ButtonState.Released);
 
-            (int mX, int mY) = MouseCell();
-
+            (int currCol, int currRow) = MouseCell();
+         
             bool isFirstLineBeingAdded = true;
-            foreach (var cell in Grid)
+
+            for (int row = 0; row < Rows; row++)
             {
-                if (cell.Value.PieceType != PieceType.Dot && cell.Value.Color == currColor)
+                for (int col = 0; col < Cols; col++)
                 {
-                    isFirstLineBeingAdded = false;
+                    var cell = Grid[row, col];
+                    if (cell == null) continue;
+                    if (cell.PieceType != PieceType.Dot && cell.Color == currColor)
+                    {
+                        isFirstLineBeingAdded = false;
+                    }
                 }
             }
 
@@ -145,177 +146,99 @@ namespace FlowFree
             }
 
             #region FigureOutDirection
-            if (mX == vectorToCheck.X && mY == vectorToCheck.Y)
+            if (currRow == vectorToCheck.X && currCol == vectorToCheck.Y)
             {
                 return;
             }
 
-            bool hasDirectionBeenChosen = false;
 
-            Direction directionChosen = Direction.None;
-
-            if (mX > vectorToCheck.X)
+            if (currCol > vectorToCheck.X)
             {
                 CurrDirection = Direction.Right;
-                if (PrevDirection == CurrDirection)
-                {
-                    var offSetX = mX - 0.5f;
-                    if (offSetX > vectorToCheck.X)
-                    {
-                        hasDirectionBeenChosen = true;
-                    }
-                }
-
-                directionChosen = CurrDirection;
             }
-            else if (mX < vectorToCheck.X && !hasDirectionBeenChosen)
+            else if (currCol < vectorToCheck.X)
             {
                 CurrDirection = Direction.Left;
-                if (PrevDirection == CurrDirection)
-                {
-                    var offSetX = mX + 0.5f;
-                    if (offSetX < vectorToCheck.X)
-                    {
-                        hasDirectionBeenChosen = true;
-                    }
-                    else
-                    {
-                        CurrDirection = directionChosen;
-                    }
-                }
-
-                directionChosen = CurrDirection;
             }
-            if (mY > vectorToCheck.Y && !hasDirectionBeenChosen)
+            if (currRow > vectorToCheck.Y)
             {
                 CurrDirection = Direction.Down;
-                if (PrevDirection == CurrDirection)
-                {
-                    var offsetY = mY - 0.5f;
-                    if (offsetY > vectorToCheck.Y)
-                    {
-                        hasDirectionBeenChosen = true;
-                    }
-                    else
-                    {
-                        CurrDirection = directionChosen;
-                    }
-                }
-
-                directionChosen = CurrDirection;
             }
-            else if (mY < vectorToCheck.Y && !hasDirectionBeenChosen)
+            else if (currRow < vectorToCheck.Y)
             {
                 CurrDirection = Direction.Up;
-                if (PrevDirection == CurrDirection)
-                {
-                    var offsetY = mY + 0.5f;
-                    if (offsetY < vectorToCheck.Y)
-                    {
-                        hasDirectionBeenChosen = true;
-                    }
-                    else
-                    {
-                        CurrDirection = directionChosen;
-                    }
-                }
             }
             #endregion
 
-            Vector2 addPos = Vector2.One * -1;
+            Game1.Title = $"{PrevPos.X}{PrevPos.Y}";
+            
+            float turnrotation = 0f;
             float rotation = 0f;
 
-
-            Game1.Title = $"{CurrDirection}";
-            switch (CurrDirection)
+            if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
             {
-                case Direction.Up:
-                    addPos = new Vector2(mX, mY + 0.5f);
-                    break;
-
-                case Direction.Down:
-                    addPos = new Vector2(mX, mY - 0.5f);
-                    break;
-
-                case Direction.Left:
-                    addPos = new Vector2(mX + 0.5f, mY);
-                    rotation = 90;
-                    break;
-
-                case Direction.Right:
-                    addPos = new Vector2(mX - 0.5f, mY);
-                    rotation = 90;
-                    break;
-            }
-
-
-            if (addPos.X >= 0 && addPos.Y >= 0)
-            {
-                //add circle
-                if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
+                Vector2 pos = new Vector2(currCol * CellSize, currRow * CellSize);
+                switch (CurrDirection)
                 {
-                    Vector2 pos = new Vector2(addPos.X * CellSize, addPos.Y * CellSize);
-                    switch (CurrDirection)
-                    {
-                        case Direction.Up:
-                            pos.X += CellSize / 2;
-                            pos.Y += CellSize;
-                            break;
-                        case Direction.Down:
-                            pos.X += CellSize / 2;
-                            break;
-                        case Direction.Left:
-                            pos.X += CellSize;
-                            pos.Y += CellSize / 2;
-                            break;
-                        case Direction.Right:
-                            pos.Y += CellSize / 2;
-                            break;
-                    }
-                    Circles.Add(new Sprite(CircleTexture, pos, currColor, Scale.ToVector2()));
+                    case Direction.Up:
+                        rotation = 0f;
+                        break;
+                    case Direction.Down:
+                        rotation = 0f;
+                       break;
+                    case Direction.Left:
+                        rotation = 90f;
+                        break;
+                    case Direction.Right:
+                        pos.X -= CellSize / 2 + 20;
+                        pos.Y += CellSize / 2 + 20;
+                        rotation = 90f;
+                        break;
                 }
+                Circles.Add(new Sprite(CircleTexture, pos, currColor, Scale.ToVector2()));
+                Circles[Circles.Count - 1].Rotation = turnrotation.ToRadians();
+            } 
 
-                Grid[(addPos.X, addPos.Y)] = new FlowPiece(currColor, PieceType.Line, rotation);
-                PrevPos = addPos;
-                PrevDirection = CurrDirection;
-            }
+            Grid[currRow, currCol] = new FlowPiece(currColor, PieceType.Line, rotation);
+            PrevPos = new Vector2(currCol, currRow);
+            PrevDirection = CurrDirection;
         }
 
         public override void Draw(SpriteBatch sb)
         {
-            foreach (var cell in Grid)
+            for (int row = 0; row < Rows; row++)
             {
-                var piece = cell.Value;
-                if (piece.PieceType == PieceType.Empty) continue;
-
-                float x = (float)cell.Key.x;
-                float y = (float)cell.Key.y;
-
-                var texture = piece.PieceTexture[piece.PieceType];
-
-                Vector2 pos = Vector2.Zero;
-
-                switch (piece.PieceType)
+                for (int col = 0; col < Cols; col++)
                 {
-                    case PieceType.Dot:
-                        pos = new Vector2(x * CellSize + CellSize / 2, y * CellSize + CellSize / 2);
-                        break;
+                    var piece = Grid[row, col];
 
-                    case PieceType.Line:
-                        switch (piece.Rotation)
-                        {
-                            case 0:
-                                pos = new Vector2(x * CellSize + CellSize / 2, y * CellSize + CellSize / 2);
-                                break;
+                    if (piece == null) continue;
+                    
+                    var texture = piece.PieceTexture[piece.PieceType];
 
-                            case 90:
-                                pos = new Vector2(x * CellSize + CellSize / 2, y * CellSize + CellSize - CellSize / 2);
-                                break;
-                        }
-                        break;
+                    Vector2 pos = Vector2.Zero;
+
+                    switch (piece.PieceType)
+                    {
+                        case PieceType.Dot:
+                            pos = new Vector2(col * CellSize + CellSize / 2, row * CellSize + CellSize / 2);
+                            break;
+
+                        case PieceType.Line:
+                            switch (piece.Rotation)
+                            {
+                                case 0:
+                                    pos = new Vector2(col * CellSize + CellSize / 2, row * CellSize + CellSize / 2);
+                                    break;
+
+                                case 90:
+                                    pos = new Vector2(col * CellSize + CellSize / 2, row * CellSize + CellSize - CellSize / 2);
+                                    break;
+                            }
+                            break;
+                    }
+                    sb.Draw(texture, pos, null, piece.Color, piece.Rotation.ToRadians(), new Vector2(texture.Width / 2, texture.Height / 2), Scale.ToVector2(), SpriteEffects.None, 0f);
                 }
-                sb.Draw(texture, pos, null, piece.Color, piece.Rotation.ToRadians(), new Vector2(texture.Width / 2, texture.Height / 2), Scale.ToVector2(), SpriteEffects.None, 0f);
-
             }
 
             foreach (var circle in Circles)
