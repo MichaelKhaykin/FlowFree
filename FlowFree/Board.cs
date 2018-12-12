@@ -24,10 +24,15 @@ namespace FlowFree
         Vector2 PrevPos;
 
         float globalRot = 0f;
+
+        List<Sprite> HalfBeams = new List<Sprite>();
+    
     
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
         {
+            HalfBeams = new List<Sprite>();
+
             CellSize = bounds.Width / cols;
     
             Test();
@@ -81,8 +86,8 @@ namespace FlowFree
 
                         currColor = cell.Color;
                         adding = true;
-                        
-                        #region RemovePath and Circles
+
+                        #region RemovePath
                         for (int i = 0; i < Rows; i++)
                         {
                             for (int j = 0; j < Cols; j++)
@@ -95,6 +100,14 @@ namespace FlowFree
                                 }
                             }
                         }
+
+                        for(int i = 0; i < HalfBeams.Count; i++)
+                        {
+                            if (HalfBeams[i].Color != currColor) continue;
+                            HalfBeams.RemoveAt(i);
+                            i--;
+                        }
+                        PrevDirection = Direction.None;
                         #endregion
                     }
                 }
@@ -156,34 +169,141 @@ namespace FlowFree
             }
             #endregion
 
-            Game1.Title = $"Prev: ({PrevPos.X},{PrevPos.Y}) Curr: ({currCol},{currRow})";
-         
+            Game1.Title = $"Directon:{CurrDirection}. Prev: ({PrevPos.X},{PrevPos.Y}) Curr: ({currCol},{currRow})";
+
             if (PrevDirection != CurrDirection && PrevDirection != Direction.None)
             {
                 Point pos = PrevPos.ToPoint();
+                Vector2 drawPosition = new Vector2(pos.X * CellSize, pos.Y * CellSize);
+                float turnRot = 0f;
 
                 switch (CurrDirection)
                 {
                     case Direction.Up:
                         globalRot = 0f;
+                        switch (PrevDirection)
+                        {
+                            case Direction.Right:
+                                turnRot = 270f;
+                                break;
+
+                            case Direction.Left:
+                                turnRot = 0f;
+                                break;
+                        }
                         break;
+
+                    case Direction.Down:
+                        globalRot = 0f;
+                        switch (PrevDirection)
+                        {
+                            case Direction.Left:
+                                turnRot = 90;
+                                break;
+
+                            case Direction.Right:
+                                turnRot = 180f;
+                                break;
+                        }
+                        break;
+
+                    case Direction.Left:
+                        globalRot = 90f;
+                        switch (PrevDirection)
+                        {
+                            case Direction.Up:
+                                turnRot = 180f;
+                                break;
+
+                            case Direction.Down:
+                                turnRot = 270f;
+                                break;
+                        }
+                        break;
+
+                    case Direction.Right:
+                        globalRot = 90f;
+                        switch (PrevDirection)
+                        {
+                            case Direction.Up:
+                                turnRot = 90f;
+                                break;
+
+                            case Direction.Down:
+                                turnRot = 0f;
+                                break;
+                        }
+                        break;
+                }
+
+                Grid[pos.Y, pos.X] = new FlowPiece(currColor, PieceType.Turn, turnRot, drawPosition.X, drawPosition.Y);
+            }
+            else
+            {
+                switch (CurrDirection)
+                {
+                    case Direction.Up:
+                        globalRot = 0f;
+                        break;
+
                     case Direction.Down:
                         globalRot = 0f;
                         break;
+
                     case Direction.Left:
                         globalRot = 90f;
                         break;
+
                     case Direction.Right:
                         globalRot = 90f;
                         break;
                 }
-
-                 Grid[pos.Y, pos.X] = new FlowPiece(currColor, PieceType.Turn, 0f);
             }
 
-            Grid[currRow, currCol] = new FlowPiece(currColor, PieceType.Line, globalRot);
-            PrevPos = new Vector2(currCol, currRow);
-            PrevDirection = CurrDirection;
+            if (Grid[currRow, currCol] == null)
+            {
+                Grid[currRow, currCol] = new FlowPiece(currColor, PieceType.Line, globalRot);
+                PrevPos = new Vector2(currCol, currRow);
+                PrevDirection = CurrDirection;
+            }
+            
+            //if you have reached the oppisite dot
+            if(Grid[currRow, currCol].Color == currColor && Grid[currRow, currCol].PieceType == PieceType.Dot 
+                && CurrStartPos != new Vector2(currCol, currRow))
+            {
+                var beam = new Sprite(Game1.LineTexture, new Vector2(currCol * CellSize, currRow * CellSize), currColor, Scale.ToVector2());
+                switch (CurrDirection)
+                {
+                    case Direction.Up:
+                        beam.Position.X += CellSize / 2;
+                        beam.Position.Y += CellSize;
+                        break;
+                    case Direction.Down:
+                        beam.Position.X += CellSize / 2;
+                        beam.Position.Y += beam.ScaledWidth / 2;
+                        break;
+                    case Direction.Left:
+                        beam.Rotation = 90f.ToRadians();
+                        beam.Position.X += CellSize;
+                        beam.Position.Y += CellSize / 2;
+                        break;
+                    case Direction.Right:
+                        beam.Rotation = 90f.ToRadians();
+                        beam.Position.X += beam.ScaledWidth / 2;
+                        beam.Position.Y += CellSize / 2;
+                        break;
+                }
+
+                foreach (var halfbeam in HalfBeams)
+                {
+                    if (halfbeam.Position == beam.Position)
+                    {
+                        return;
+                    }
+                }
+
+                HalfBeams.Add(beam);
+            }
         }
 
         public override void Draw(SpriteBatch sb)
@@ -220,13 +340,39 @@ namespace FlowFree
                             break;
 
                         case PieceType.Turn:
-                            pos = new Vector2(col * CellSize + CellSize / 2 + Game1.TurnTexture.Width / 2, row * CellSize + CellSize / 2 - Game1.TurnTexture.Height / 2);
+                            pos = piece.DrawPos;
+                            switch (piece.Rotation)
+                            {
+                                case 0:
+                                    pos.X += Game1.TurnTexture.Width * Scale;
+                                    pos.Y += Game1.TurnTexture.Height / 2 * Scale;
+                                    break;
+
+                                case 90:
+                                    pos.X += Game1.TurnTexture.Width * Scale;
+                                    pos.Y += Game1.TurnTexture.Height * Scale;
+                                    break;
+
+                                case 180:
+                                    pos.X += Game1.TurnTexture.Width / 2 * Scale;
+                                    pos.Y += Game1.TurnTexture.Height * Scale;
+                                   break;
+
+                                case 270:
+                                    pos.X += Game1.TurnTexture.Width / 2 * Scale;
+                                    pos.Y += Game1.TurnTexture.Height / 2 * Scale;
+                                    break;
+                            }
                             break;
                     }
                     sb.Draw(texture, pos, null, piece.Color, piece.Rotation.ToRadians(), new Vector2(texture.Width / 2, texture.Height / 2), Scale.ToVector2(), SpriteEffects.None, 0f);
                 }
             }
 
+            foreach(var halfBeam in HalfBeams)
+            {
+                halfBeam.Draw(sb);
+            }
        
             base.Draw(sb);
         }

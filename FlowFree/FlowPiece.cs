@@ -14,9 +14,11 @@ namespace FlowFree
         public PieceType PieceType;
         public float Rotation;
         public Dictionary<PieceType, Texture2D> PieceTexture;
-        
 
-        public FlowPiece(Color color, PieceType type, float rotation)
+        public Vector2 DrawPos;
+
+        //drawX and drawY are specifically for the turn piece
+        public FlowPiece(Color color, PieceType type, float rotation, float drawX = 0, float drawY = 0)
         {
             Color = color;
             PieceType = type;
@@ -28,6 +30,8 @@ namespace FlowFree
                 [PieceType.Line] = Game1.LineTexture,
                 [PieceType.Turn] = Game1.TurnTexture
             };
+
+            DrawPos = new Vector2(drawX, drawY);
         }
     }
 }
