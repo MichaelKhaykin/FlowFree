@@ -27,6 +27,7 @@ namespace FlowFree
         public static Texture2D LineTexture;
         public static Texture2D DotTexture;
         public static Texture2D TurnTexture;
+        public static Texture2D DotHalf;
 
         public static float Scale = 1f;
         #endregion
@@ -62,7 +63,7 @@ namespace FlowFree
             LineTexture = Content.Load<Texture2D>("flowline");
             DotTexture = Content.Load<Texture2D>("dot");
             TurnTexture = Content.Load<Texture2D>("FlowCorner");
-
+            DotHalf = Content.Load<Texture2D>("DotHalf");
 
             CurrentScreen = ScreenStates.Game;
 

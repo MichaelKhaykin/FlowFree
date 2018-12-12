@@ -14,7 +14,8 @@ namespace FlowFree
     {
         Dot,
         Line,
-        Turn
+        Turn,
+        DotWithHalf
     }
     public enum Direction
     {
