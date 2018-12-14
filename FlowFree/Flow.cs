@@ -55,45 +55,88 @@ namespace FlowFree
         {
             if (Game1.MouseState.LeftButton == ButtonState.Pressed && !shouldAdd)
             {
-                foreach(var node in Pieces)
-                {
-                    Board.Grid[node.ArrayPosition.X, node.ArrayPosition.Y] = false;
-                }
-
-                int count = Pieces.Count - 1;
-                while(count > 0)
-                {
-                    Pieces.Remove(Pieces.ElementAt(count));
-                    count--;
-                }
-
-                var hitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
-                if(hitBox.Contains(Game1.MouseState.Position))
-                {
-                    Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y] = false;
-                    Board.Grid[EndPosition.X, EndPosition.Y] = true;
-
-                    var temp = EndPosition;
-                    EndPosition = Pieces.First().ArrayPosition;
-                    Pieces.First().ArrayPosition = temp;
-                    
-                    shouldAdd = true;
-                }
+                //if off flow, do nothing
+                bool isOnFlow = false;
                 foreach (var piece in Pieces)
                 {
                     var hitbox = new Rectangle(piece.ArrayPosition.X * CellSize, piece.ArrayPosition.Y * CellSize, CellSize, CellSize);
                     if (hitbox.Contains(Game1.MouseState.Position))
                     {
+                        isOnFlow = true;
+                    }
+                }
+                var endHitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
+                if(endHitBox.Contains(Game1.MouseState.Position))
+                {
+                    isOnFlow = true;
+                }
+                if(isOnFlow)
+                {
+                    var startHitBox = new Rectangle(Pieces.First().ArrayPosition.X * CellSize, Pieces.First().ArrayPosition.Y * CellSize, CellSize, CellSize);
+                    endHitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
+                    var lastPiece = new Rectangle(Pieces.Last().ArrayPosition.X * CellSize, Pieces.Last().ArrayPosition.Y * CellSize, CellSize, CellSize);
+                    if (startHitBox.Contains(Game1.MouseState.Position))
+                    {
+                        Pieces.First().PieceType = PieceType.Dot;
+                        Pieces.First().Rotation = 0f;
+ 
+                        Game1.Title = "Start";
+                        int count = Pieces.Count - 1;
+                        while (count > 0)
+                        {
+                            var piece = Pieces.ElementAt(count);
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y] = false;
+                            Pieces.Remove(piece);
+                            count--;
+                        }
+                    }
+                    else if (endHitBox.Contains(Game1.MouseState.Position))
+                    {
+                        Game1.Title = "End";
+                        Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y] = false;
+                        Board.Grid[EndPosition.X, EndPosition.Y] = true;
+
+                        var temp = EndPosition;
+                        EndPosition = Pieces.First().ArrayPosition;
+                        Pieces.First().ArrayPosition = temp;
+
+                        Pieces.First().PieceType = PieceType.Dot;
+                        Pieces.First().Rotation = 0f;
+
+                        int count = Pieces.Count - 1;
+                        while (count > 0)
+                        {
+                            var piece = Pieces.ElementAt(count);
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y] = false;
+                            Pieces.Remove(piece);
+                            count--;
+                        }
+                    }
+                    if (lastPiece.Contains(Game1.MouseState.Position))
+                    {
                         shouldAdd = true;
                     }
                 }
-            }
-            else if(Game1.MouseState.LeftButton == ButtonState.Released)
-            {
-                shouldAdd = false;
+                //if adding piece
+            
+                if (shouldAdd)
+                {
+                    Board.CurrentFlow = this;
+                }
             }
 
-            if (!shouldAdd || IsCompleted) return;
+            if (Board.CurrentFlow != this)
+            {
+            //    return;
+            }
+
+            if (Game1.MouseState.LeftButton == ButtonState.Released)
+            {
+                shouldAdd = false;
+                Board.CurrentFlow = null;
+            }
+
+            if ((!shouldAdd) || (IsCompleted)) return;
 
             (int x, int y) = MouseCell(CellSize);
             if (Board.Grid[x, y] == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
@@ -130,7 +173,7 @@ namespace FlowFree
                     image = Game1.DotHalf;
                     if (curr.Value.ArrayPosition.Y > curr.Next.Value.ArrayPosition.Y)
                     {
-                        curr.Value.Rotation = 0;
+                        curr.Value.Rotation = 180f;
                     }
                     else if (curr.Value.ArrayPosition.X < curr.Next.Value.ArrayPosition.X)
                     {

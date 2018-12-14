@@ -19,6 +19,7 @@ namespace FlowFree
 
         public static bool[,] Grid;
 
+        public static Flow CurrentFlow;
     
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
@@ -56,13 +57,12 @@ namespace FlowFree
         {
             foreach (var flow in Flows)
             {
-                flow.Update(gameTime);
+               flow.Update(gameTime);
             }
         }
 
         public override void Draw(SpriteBatch sb)
         {
-
             base.Draw(sb);
             foreach (var flow in Flows)
             {
