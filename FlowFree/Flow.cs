@@ -13,7 +13,14 @@ namespace FlowFree
     {
         public LinkedList<FlowPiece> Pieces;
 
-        public bool IsCompleted => Pieces.Last().ArrayPosition == EndPosition;
+        public bool IsCompleted
+        {
+            get
+            {
+                if (Pieces.Count == 0) return false;
+                return Pieces.Last().ArrayPosition == EndPosition;
+            }
+        }
 
         public Point EndPosition;
 
@@ -37,17 +44,41 @@ namespace FlowFree
 
             Pieces.AddLast(new FlowPiece(color, PieceType.Dot, 0, start.X, start.Y));
 
+            Board.Grid[start.X, start.Y] = true;
+
             EndPosition = end;
 
             Scale = scale;
         }
 
-        public void Update(GameTime gameTime, bool[,] Grid)
+        public void Update(GameTime gameTime)
         {
-            if (IsCompleted) return;
-
-            if (Game1.MouseState.LeftButton == ButtonState.Pressed)
+            if (Game1.MouseState.LeftButton == ButtonState.Pressed && !shouldAdd)
             {
+                foreach(var node in Pieces)
+                {
+                    Board.Grid[node.ArrayPosition.X, node.ArrayPosition.Y] = false;
+                }
+
+                int count = Pieces.Count - 1;
+                while(count > 0)
+                {
+                    Pieces.Remove(Pieces.ElementAt(count));
+                    count--;
+                }
+
+                var hitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
+                if(hitBox.Contains(Game1.MouseState.Position))
+                {
+                    Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y] = false;
+                    Board.Grid[EndPosition.X, EndPosition.Y] = true;
+
+                    var temp = EndPosition;
+                    EndPosition = Pieces.First().ArrayPosition;
+                    Pieces.First().ArrayPosition = temp;
+                    
+                    shouldAdd = true;
+                }
                 foreach (var piece in Pieces)
                 {
                     var hitbox = new Rectangle(piece.ArrayPosition.X * CellSize, piece.ArrayPosition.Y * CellSize, CellSize, CellSize);
@@ -57,18 +88,18 @@ namespace FlowFree
                     }
                 }
             }
-            else
+            else if(Game1.MouseState.LeftButton == ButtonState.Released)
             {
                 shouldAdd = false;
             }
 
-            if (!shouldAdd) return;
+            if (!shouldAdd || IsCompleted) return;
 
             (int x, int y) = MouseCell(CellSize);
-            if (Grid[x, y] == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
+            if (Board.Grid[x, y] == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
             {
                 Pieces.AddLast(new FlowPiece(Color, PieceType.Line, 0f, x, y));
-                Grid[x, y] = true;
+                Board.Grid[x, y] = true;
             }
 
             PrevPosAdded = (x, y);

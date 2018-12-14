@@ -17,8 +17,9 @@ namespace FlowFree
       
         List<Flow> Flows = new List<Flow>();
 
-        bool[,] Grid;
+        public static bool[,] Grid;
 
+    
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
         { 
@@ -31,9 +32,11 @@ namespace FlowFree
 
         private void Test()
         {
-            Flows.Add(new Flow(Color.Red, new Point(0, 0), new Point(2, 2), CellSize, Scale));
-            Grid[0, 0] = true;
-     //       Grid[2, 2] = true;
+            Flows.Add(new Flow(Color.Red, new Point(0, 0), new Point(1, 4), CellSize, Scale));
+            Flows.Add(new Flow(Color.Green, new Point(2, 0), new Point(1, 3), CellSize, Scale));
+            Flows.Add(new Flow(Color.Blue, new Point(2, 1), new Point(2, 4), CellSize, Scale));
+            Flows.Add(new Flow(Color.Yellow, new Point(4, 0), new Point(3, 3), CellSize, Scale));
+            Flows.Add(new Flow(Color.Orange, new Point(4, 1), new Point(3, 4), CellSize, Scale));
         }
 
 
@@ -53,17 +56,18 @@ namespace FlowFree
         {
             foreach (var flow in Flows)
             {
-                flow.Update(gameTime, Grid);
+                flow.Update(gameTime);
             }
         }
 
         public override void Draw(SpriteBatch sb)
         {
-            foreach(var flow in Flows)
+
+            base.Draw(sb);
+            foreach (var flow in Flows)
             {
                 flow.Draw(sb);
             }
-            base.Draw(sb);
         }
     }
 }
