@@ -33,7 +33,7 @@ namespace FlowFree
         {
             Flows.Add(new Flow(Color.Red, new Point(0, 0), new Point(2, 2), CellSize, Scale));
             Grid[0, 0] = true;
-            Grid[2, 2] = true;
+     //       Grid[2, 2] = true;
         }
 
 

@@ -25,6 +25,8 @@ namespace FlowFree
 
         float Scale;
 
+        (int x, int y) PrevPosAdded = (-1, -1);
+
         public Flow(Color color, Point start, Point end, int cellsize, float scale)
         {
             Pieces = new LinkedList<FlowPiece>();
@@ -34,7 +36,7 @@ namespace FlowFree
             Color = color;
 
             Pieces.AddLast(new FlowPiece(color, PieceType.Dot, 0, start.X, start.Y));
-        
+
             EndPosition = end;
 
             Scale = scale;
@@ -42,6 +44,8 @@ namespace FlowFree
 
         public void Update(GameTime gameTime, bool[,] Grid)
         {
+            if (IsCompleted) return;
+
             if (Game1.MouseState.LeftButton == ButtonState.Pressed)
             {
                 foreach (var piece in Pieces)
@@ -61,95 +65,107 @@ namespace FlowFree
             if (!shouldAdd) return;
 
             (int x, int y) = MouseCell(CellSize);
-            if (Grid[x, y] == false)
+            if (Grid[x, y] == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
             {
                 Pieces.AddLast(new FlowPiece(Color, PieceType.Line, 0f, x, y));
                 Grid[x, y] = true;
             }
+
+            PrevPosAdded = (x, y);
         }
-        
+
         private (int x, int y) MouseCell(int CellSize)
         {
             return (Game1.MouseState.Position.X / CellSize, Game1.MouseState.Position.Y / CellSize);
         }
 
+        private Vector2 MidPoint(Vector2 a, Vector2 b)
+        {
+            return new Vector2((a.X + b.X) / 2, (a.Y + b.Y) / 2);
+        }
+
         public void Draw(SpriteBatch sb)
         {
+            Texture2D image = null;
             for (var curr = Pieces.First; curr != null; curr = curr.Next)
-            { 
-                Texture2D image = null;
-            
+            {
                 //image
                 if (Pieces.Count == 1)
                 {
                     image = Game1.DotTexture;
                 }
-                else if(curr == Pieces.First)
+                else if (curr == Pieces.First)
                 {
                     image = Game1.DotHalf;
                     if (curr.Value.ArrayPosition.Y > curr.Next.Value.ArrayPosition.Y)
                     {
-                         curr.Value.Rotation = 0;
+                        curr.Value.Rotation = 0;
                     }
-                    else if (curr.Value.ArrayPosition.X < curr.Next.Value.ArrayPosition.X
-                        || curr.Value.ArrayPosition.X > curr.Next.Value.ArrayPosition.X)
+                    else if (curr.Value.ArrayPosition.X < curr.Next.Value.ArrayPosition.X)
                     {
-                        curr.Value.Rotation = 90f;
+                        curr.Value.Rotation = 270f;
+                    }
+                    else if (curr.Value.ArrayPosition.X > curr.Next.Value.ArrayPosition.X)
+                    {
+                        curr.Value.Rotation = 90;
                     }
                 }
-                else if(curr == Pieces.Last)
+                else if (curr == Pieces.Last)
                 {
                     image = Game1.DotHalf;
                     if (curr.Value.ArrayPosition.Y > curr.Previous.Value.ArrayPosition.Y)
                     {
                         curr.Value.Rotation = 180;
                     }
-                    else if (curr.Value.ArrayPosition.X < curr.Previous.Value.ArrayPosition.X
-                        || curr.Value.ArrayPosition.X > curr.Previous.Value.ArrayPosition.X)
+                    else if (curr.Value.ArrayPosition.X < curr.Previous.Value.ArrayPosition.X)
+                    {
+                        curr.Value.Rotation = 270;
+                    }
+                    else if (curr.Value.ArrayPosition.X > curr.Previous.Value.ArrayPosition.X)
                     {
                         curr.Value.Rotation = 90f;
                     }
-                }
-                else if(curr.Previous.Value.ArrayPosition.X == curr.Next.Value.ArrayPosition.X 
-                    || curr.Previous.Value.ArrayPosition.Y == curr.Next.Value.ArrayPosition.Y)
-                {
-                    image = Game1.LineTexture;
                 }
                 else
                 {
                     image = Game1.TurnTexture;
                     //add in a bunch of checks for checking 
                     //the direction
-                    if(curr.Value.ArrayPosition.Y == curr.Next.Value.ArrayPosition.Y
-                        && curr.Value.ArrayPosition.X < curr.Next.Value.ArrayPosition.X)
+                    var previousPos = new Vector2(curr.Previous.Value.ArrayPosition.X, curr.Previous.Value.ArrayPosition.Y);
+                    var nextPos = new Vector2(curr.Next.Value.ArrayPosition.X, curr.Next.Value.ArrayPosition.Y);
+
+                    var m = MidPoint(nextPos, previousPos);
+                    var slope = m - curr.Value.ArrayPosition.ToVector2();
+                    if (slope.X > 0 && slope.Y < 0)
                     {
                         curr.Value.Rotation = 0f;
                     }
-                    else if(curr.Value.ArrayPosition.Y == curr.Next.Value.ArrayPosition.Y
-                        && curr.Value.ArrayPosition.X > curr.Next.Value.ArrayPosition.X)
-                    {
-                        curr.Value.Rotation = 270f;
-                    }
-                    else if(curr.Value.ArrayPosition.X == curr.Next.Value.ArrayPosition.X 
-                        && curr.Value.ArrayPosition.Y < curr.Next.Value.ArrayPosition.Y)
-                    {
-                        curr.Value.Rotation = 180f;
-                    }
-                    else
+                    else if (slope.X > 0 && slope.Y > 0)
                     {
                         curr.Value.Rotation = 90f;
                     }
+                    else if (slope.X < 0 && slope.Y < 0)
+                    {
+                        curr.Value.Rotation = 270f;
+                    }
+                    else if (slope.X < 0 && slope.Y > 0)
+                    {
+                        curr.Value.Rotation = 180f;
+                    }
+                    else if (slope.X == 0)
+                    {
+                       image = Game1.LineTexture;
+                    }
                 }
-
 
                 Vector2 pos = new Vector2(curr.Value.ArrayPosition.X * CellSize + CellSize / 2, curr.Value.ArrayPosition.Y * CellSize + CellSize / 2);
                 //rotation
-                switch(curr.Value.Rotation)
+                switch (curr.Value.Rotation)
                 {
                     case 0:
                         switch (image.Name)
                         {
-                            case "LineTexture":
+                            case "flowline":
 
                                 break;
 
@@ -161,51 +177,41 @@ namespace FlowFree
                         break;
 
                     case 90:
-                        switch(image.Name)
+                        switch (image.Name)
                         {
-                            case "LineTexture":
+                            case "flowline":
 
                                 break;
 
                             case "FlowCorner":
-
-                                break;
-                        }
-                        break;
-
-                    case 180:
-                        switch(image.Name)
-                        {
-                            case "LineTexture":
-
-                                break;
-
-                            case "FlowCorner":
-                                pos.X -= image.Width / 2;
+                                pos.X += image.Width / 2;
                                 pos.Y += image.Height / 2;
                                 break;
                         }
                         break;
 
-                    case 270:
-                        switch(image.Name)
+                    case 180:
+                        if (image.Name == "FlowCorner")
                         {
-                            case "LineTexture":
+                            pos.X -= image.Width / 2;
+                            pos.Y += image.Height / 2;
+                        }
+                        break;
 
-                                break;
-
-                            case "FlowCorner":
-                                pos.X -= image.Width / 2;
-                                pos.Y -= image.Height / 2;
-                                break;
+                    case 270:
+                        if (image.Name == "FlowCorner")
+                        {
+                            pos.X -= image.Width / 2;
+                            pos.Y -= image.Height / 2;
                         }
                         break;
                 }
-
                 //draw the flow
                 sb.Draw(image, pos, null, curr.Value.Color, curr.Value.Rotation.ToRadians(), new Vector2(image.Width / 2, image.Height / 2), Scale, SpriteEffects.None, 0);
-
             }
+
+             var endImage = Game1.DotTexture;
+             sb.Draw(endImage, new Vector2(EndPosition.X * CellSize + CellSize / 2, EndPosition.Y * CellSize + CellSize / 2), null, Color, 0f, new Vector2(endImage.Width / 2, endImage.Height / 2), Scale, SpriteEffects.None, 0f);
             //draw the end point
         }
     }
