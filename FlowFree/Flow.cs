@@ -32,6 +32,8 @@ namespace FlowFree
 
         float Scale;
 
+        int testCounter = 0;
+
         (int x, int y) PrevPosAdded = (-1, -1);
 
         public Flow(Color color, Point start, Point end, int cellsize, float scale)
@@ -44,7 +46,8 @@ namespace FlowFree
 
             Pieces.AddLast(new FlowPiece(color, PieceType.Dot, 0, start.X, start.Y));
 
-            Board.Grid[start.X, start.Y] = true;
+            Board.Grid[start.X, start.Y].isFilled = true;
+            Board.Grid[start.X, start.Y].color = color;
 
             EndPosition = end;
 
@@ -66,35 +69,38 @@ namespace FlowFree
                     }
                 }
                 var endHitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
-                if(endHitBox.Contains(Game1.MouseState.Position))
+                if (endHitBox.Contains(Game1.MouseState.Position))
                 {
                     isOnFlow = true;
                 }
-                if(isOnFlow)
+                
+                if (isOnFlow)
                 {
                     var startHitBox = new Rectangle(Pieces.First().ArrayPosition.X * CellSize, Pieces.First().ArrayPosition.Y * CellSize, CellSize, CellSize);
                     endHitBox = new Rectangle(EndPosition.X * CellSize, EndPosition.Y * CellSize, CellSize, CellSize);
                     var lastPiece = new Rectangle(Pieces.Last().ArrayPosition.X * CellSize, Pieces.Last().ArrayPosition.Y * CellSize, CellSize, CellSize);
+
                     if (startHitBox.Contains(Game1.MouseState.Position))
                     {
                         Pieces.First().PieceType = PieceType.Dot;
                         Pieces.First().Rotation = 0f;
- 
-                        Game1.Title = "Start";
+
                         int count = Pieces.Count - 1;
                         while (count > 0)
                         {
                             var piece = Pieces.ElementAt(count);
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y] = false;
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].isFilled = false;
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].color = Color.White;
                             Pieces.Remove(piece);
                             count--;
                         }
                     }
                     else if (endHitBox.Contains(Game1.MouseState.Position))
                     {
-                        Game1.Title = "End";
-                        Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y] = false;
-                        Board.Grid[EndPosition.X, EndPosition.Y] = true;
+                        Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y].isFilled = false;
+                        Board.Grid[Pieces.First().ArrayPosition.X, Pieces.First().ArrayPosition.Y].color = Color.White;
+                        Board.Grid[EndPosition.X, EndPosition.Y].isFilled = true;
+                        Board.Grid[EndPosition.X, EndPosition.Y].color = Color;
 
                         var temp = EndPosition;
                         EndPosition = Pieces.First().ArrayPosition;
@@ -107,7 +113,8 @@ namespace FlowFree
                         while (count > 0)
                         {
                             var piece = Pieces.ElementAt(count);
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y] = false;
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].isFilled = false;
+                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].color = Color.White;
                             Pieces.Remove(piece);
                             count--;
                         }
@@ -117,32 +124,27 @@ namespace FlowFree
                         shouldAdd = true;
                     }
                 }
-                //if adding piece
-            
-                if (shouldAdd)
-                {
-                    Board.CurrentFlow = this;
-                }
-            }
-
-            if (Board.CurrentFlow != this)
-            {
-            //    return;
             }
 
             if (Game1.MouseState.LeftButton == ButtonState.Released)
             {
                 shouldAdd = false;
-                Board.CurrentFlow = null;
             }
 
             if ((!shouldAdd) || (IsCompleted)) return;
 
             (int x, int y) = MouseCell(CellSize);
-            if (Board.Grid[x, y] == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
+
+            if(Board.Grid[x, y].isFilled && Board.Grid[x, y].color != Color)
+            {
+                //clear both paths
+            }
+
+            if (Board.Grid[x, y].isFilled == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
             {
                 Pieces.AddLast(new FlowPiece(Color, PieceType.Line, 0f, x, y));
-                Board.Grid[x, y] = true;
+                Board.Grid[x, y].isFilled = true;
+                Board.Grid[x, y].color = Color;
             }
 
             PrevPosAdded = (x, y);
@@ -210,25 +212,25 @@ namespace FlowFree
 
                     var m = MidPoint(nextPos, previousPos);
                     var slope = m - curr.Value.ArrayPosition.ToVector2();
-                    if (slope.X > 0 && slope.Y < 0)
+                    if ((slope.X > 0 && slope.X < 2) && (slope.Y < 0 && slope.Y > -2))
                     {
                         curr.Value.Rotation = 0f;
                     }
-                    else if (slope.X > 0 && slope.Y > 0)
+                    else if ((slope.X > 0 && slope.X < 2) && (slope.Y > 0 && slope.Y < 2))
                     {
                         curr.Value.Rotation = 90f;
                     }
-                    else if (slope.X < 0 && slope.Y < 0)
+                    else if ((slope.X < 0 && slope.X > -2) && (slope.Y < 0 && slope.Y > -2))
                     {
                         curr.Value.Rotation = 270f;
                     }
-                    else if (slope.X < 0 && slope.Y > 0)
+                    else if ((slope.X < 0 && slope.X > -2) && (slope.Y > 0 && slope.Y < 2))
                     {
                         curr.Value.Rotation = 180f;
                     }
                     else if (slope.X == 0)
                     {
-                       image = Game1.LineTexture;
+                        image = Game1.LineTexture;
                     }
                 }
 
@@ -284,8 +286,8 @@ namespace FlowFree
                 sb.Draw(image, pos, null, curr.Value.Color, curr.Value.Rotation.ToRadians(), new Vector2(image.Width / 2, image.Height / 2), Scale, SpriteEffects.None, 0);
             }
 
-             var endImage = Game1.DotTexture;
-             sb.Draw(endImage, new Vector2(EndPosition.X * CellSize + CellSize / 2, EndPosition.Y * CellSize + CellSize / 2), null, Color, 0f, new Vector2(endImage.Width / 2, endImage.Height / 2), Scale, SpriteEffects.None, 0f);
+            var endImage = Game1.DotTexture;
+            sb.Draw(endImage, new Vector2(EndPosition.X * CellSize + CellSize / 2, EndPosition.Y * CellSize + CellSize / 2), null, Color, 0f, new Vector2(endImage.Width / 2, endImage.Height / 2), Scale, SpriteEffects.None, 0f);
             //draw the end point
         }
     }

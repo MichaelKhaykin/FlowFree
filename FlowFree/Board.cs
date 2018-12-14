@@ -17,17 +17,15 @@ namespace FlowFree
       
         List<Flow> Flows = new List<Flow>();
 
-        public static bool[,] Grid;
+        public static (bool isFilled, Color color)[,] Grid;
 
-        public static Flow CurrentFlow;
-    
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
         { 
             CellSize = bounds.Width / cols;
     
          
-            Grid = new bool[rows, cols];
+            Grid = new (bool, Color)[rows, cols];
             Test();
         }
 
@@ -38,19 +36,6 @@ namespace FlowFree
             Flows.Add(new Flow(Color.Blue, new Point(2, 1), new Point(2, 4), CellSize, Scale));
             Flows.Add(new Flow(Color.Yellow, new Point(4, 0), new Point(3, 3), CellSize, Scale));
             Flows.Add(new Flow(Color.Orange, new Point(4, 1), new Point(3, 4), CellSize, Scale));
-        }
-
-
-        private bool IsBoardFull()
-        {
-            foreach (var cell in Grid)
-            {
-                if (cell == null)
-                {
-                    return false;
-                }
-            }
-            return true;
         }
 
         public override void Update(GameTime gameTime)
