@@ -18,7 +18,6 @@ namespace FlowFree
         public Point ArrayPosition;
 
         
-
         //drawX and drawY are specifically for the turn piece
         public FlowPiece(Color color, PieceType type, float rotation, int x, int y)
         {

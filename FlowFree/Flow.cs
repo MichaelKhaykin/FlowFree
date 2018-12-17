@@ -32,10 +32,7 @@ namespace FlowFree
 
         float Scale;
 
-        int testCounter = 0;
-
-        (int x, int y) PrevPosAdded = (-1, -1);
-
+     
         public Flow(Color color, Point start, Point end, int cellsize, float scale)
         {
             Pieces = new LinkedList<FlowPiece>();
@@ -85,15 +82,7 @@ namespace FlowFree
                         Pieces.First().PieceType = PieceType.Dot;
                         Pieces.First().Rotation = 0f;
 
-                        int count = Pieces.Count - 1;
-                        while (count > 0)
-                        {
-                            var piece = Pieces.ElementAt(count);
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].isFilled = false;
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].color = Color.White;
-                            Pieces.Remove(piece);
-                            count--;
-                        }
+                        Clear(Pieces);
                     }
                     else if (endHitBox.Contains(Game1.MouseState.Position))
                     {
@@ -109,15 +98,7 @@ namespace FlowFree
                         Pieces.First().PieceType = PieceType.Dot;
                         Pieces.First().Rotation = 0f;
 
-                        int count = Pieces.Count - 1;
-                        while (count > 0)
-                        {
-                            var piece = Pieces.ElementAt(count);
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].isFilled = false;
-                            Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].color = Color.White;
-                            Pieces.Remove(piece);
-                            count--;
-                        }
+                        Clear(Pieces);
                     }
                     if (lastPiece.Contains(Game1.MouseState.Position))
                     {
@@ -138,16 +119,41 @@ namespace FlowFree
             if(Board.Grid[x, y].isFilled && Board.Grid[x, y].color != Color)
             {
                 //clear both paths
+                var flowToClear = new LinkedList<FlowPiece>();
+                foreach(var flow in Board.Flows)
+                {
+                    if (flow.Color == Board.Grid[x, y].color)
+                    {
+                        flowToClear = flow.Pieces;
+                    }
+                }
+
+                Clear(Pieces);
+                Clear(flowToClear);
             }
 
-            if (Board.Grid[x, y].isFilled == false && (x == PrevPosAdded.x || y == PrevPosAdded.y))
+            var prevPos = Pieces.Last().ArrayPosition;
+
+            if (Board.Grid[x, y].isFilled == false && (x == prevPos.X || y == prevPos.Y))
             {
                 Pieces.AddLast(new FlowPiece(Color, PieceType.Line, 0f, x, y));
                 Board.Grid[x, y].isFilled = true;
                 Board.Grid[x, y].color = Color;
             }
+            
+        }
 
-            PrevPosAdded = (x, y);
+        private void Clear(LinkedList<FlowPiece> listToClear)
+        {
+            int count = listToClear.Count - 1;
+            while (count > 0)
+            {
+                var piece = listToClear.ElementAt(count);
+                Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].isFilled = false;
+                Board.Grid[piece.ArrayPosition.X, piece.ArrayPosition.Y].color = Color.White;
+                listToClear.Remove(piece);
+                count--;
+            }
         }
 
         private (int x, int y) MouseCell(int CellSize)
