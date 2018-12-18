@@ -12,10 +12,12 @@ namespace FlowFree
     }
     public enum PieceType
     {
+        None,
         Dot,
         Line,
         Turn,
-        DotWithHalf
+        DotWithHalf,
+        SmallDot
     }
     public enum Direction
     {

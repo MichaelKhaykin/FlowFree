@@ -24,10 +24,7 @@ namespace FlowFree
 
         public static Texture2D Pixel;
 
-        public static Texture2D LineTexture;
-        public static Texture2D DotTexture;
-        public static Texture2D TurnTexture;
-        public static Texture2D DotHalf;
+        public static Dictionary<PieceType, Texture2D> PieceTexture;
 
         public static float Scale = 1f;
         #endregion
@@ -60,16 +57,18 @@ namespace FlowFree
             Pixel = new Texture2D(GraphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });
 
-            LineTexture = Content.Load<Texture2D>("flowline");
-            DotTexture = Content.Load<Texture2D>("dot");
-            TurnTexture = Content.Load<Texture2D>("FlowCorner");
-            DotHalf = Content.Load<Texture2D>("DotHalf");
+            PieceTexture = new Dictionary<PieceType, Texture2D>()
+            {
+                [PieceType.Dot] = Content.Load<Texture2D>("dot"),
+                [PieceType.Line] = Content.Load<Texture2D>("flowline"),
+                [PieceType.Turn] = Content.Load<Texture2D>("FlowCorner"),
+                [PieceType.DotWithHalf] = Content.Load<Texture2D>("DotHalf"),
+                [PieceType.SmallDot] = Content.Load<Texture2D>("dot")
+            };
 
             CurrentScreen = ScreenStates.Game;
 
             Screens.Add(ScreenStates.Game, new GameScreen(GraphicsDevice, Content));
-
-
 
             // TODO: use this.Content to load your game content here
         }

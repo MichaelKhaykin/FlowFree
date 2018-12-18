@@ -17,7 +17,7 @@ namespace FlowFree
       
         public static List<Flow> Flows = new List<Flow>();
 
-        public static (bool isFilled, Color color)[,] Grid;
+        public static (PieceType type, Color color)[,] Grid;
 
         public Board(int rows, int cols, int gridCellSize, Rectangle bounds, ContentManager content)
             : base(rows, cols, gridCellSize, bounds, Game1.Pixel)
@@ -25,7 +25,7 @@ namespace FlowFree
             CellSize = bounds.Width / cols;
 
 
-            Grid = new(bool, Color)[rows, cols];
+            Grid = new(PieceType, Color)[rows, cols];
             Test();
         }
 
