@@ -24,12 +24,16 @@ namespace FlowFree
             var prev = Head;
             while (curr != null)
             {
+                if (curr.Value.ArrayPosition == value.ArrayPosition) return;
+
                 prev = curr;
                 curr = curr.Next;
             }
 
-            if (value == Tail.Value)
+            if (value.ArrayPosition == Tail.Value.ArrayPosition)
             {
+              //  if (prev.Prev == null) return;
+
                 Tail.Prev = prev;
                 prev.Next = Tail;
                 return;
@@ -48,12 +52,16 @@ namespace FlowFree
             var next = Tail;
             while (curr != null)
             {
+                if (curr.Value.ArrayPosition == value.ArrayPosition) return;
+
                 next = curr;
                 curr = curr.Prev;
             }
 
-            if (value == Head.Value)
+            if (value.ArrayPosition == Head.Value.ArrayPosition)
             {
+               // if (next.Next == null) return;
+
                 Head.Next = next;
                 next.Prev = Head;
                 return;
@@ -66,10 +74,10 @@ namespace FlowFree
 
             next.Prev = curr;
         }
-        public void RipOut(FlowPiece value)
+        public void RipOut(Point pos)
         {
             var curr = Head;
-            while(curr.Value != value)
+            while(curr.Value.ArrayPosition != pos)
             {
                 curr = curr.Next;
             }
@@ -95,11 +103,34 @@ namespace FlowFree
             }
             curr.Next.Prev = null;
         }
+        
 
-        void Reset()
+        public void Reset()
         {
+            var curr = Head.Next;
+            while(curr != null)
+            {
+                Board.Grid[curr.Value.ArrayPosition.X, curr.Value.ArrayPosition.Y] = (PieceType.SmallDot, Color.White);
+                curr = curr.Next;
+            }
+
+            curr = Tail.Prev;
+            while(curr != null)
+            {
+                Board.Grid[curr.Value.ArrayPosition.X, curr.Value.ArrayPosition.Y] = (PieceType.SmallDot, Color.White);
+                curr = curr.Prev;
+            }
+
+            #region Reset Head And Tail
+            Head.Value.PieceType = PieceType.Dot;
+            Tail.Value.PieceType = PieceType.Dot;
+
+            Head.Value.Rotation = 0f;
+            Tail.Value.Rotation = 0f;
+
             Head.Next = null;
             Tail.Prev = null;
+            #endregion
         }
     }
 }

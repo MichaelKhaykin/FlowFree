@@ -63,7 +63,7 @@ namespace FlowFree
                 [PieceType.Line] = Content.Load<Texture2D>("flowline"),
                 [PieceType.Turn] = Content.Load<Texture2D>("FlowCorner"),
                 [PieceType.DotWithHalf] = Content.Load<Texture2D>("DotHalf"),
-                [PieceType.SmallDot] = Content.Load<Texture2D>("dot")
+                [PieceType.SmallDot] = Content.Load<Texture2D>("smalldot")
             };
 
             CurrentScreen = ScreenStates.Game;
