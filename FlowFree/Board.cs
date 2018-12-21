@@ -14,8 +14,10 @@ namespace FlowFree
     public class Board : GameBoard<FlowPiece>
     {
         int CellSize = 0;
-      
+
         public static List<Flow> Flows = new List<Flow>();
+
+        public static Color CurrentColorActivated;
 
         public static (PieceType type, Color color)[,] Grid;
 
@@ -40,10 +42,20 @@ namespace FlowFree
 
         public override void Update(GameTime gameTime)
         {
+            if(Game1.MouseState.LeftButton == ButtonState.Released)
+            {
+                CurrentColorActivated = Color.White;
+            }
+
+            bool isAllCompleted = true;
             foreach (var flow in Flows)
             {
-               flow.Update(gameTime);
+                flow.Update(gameTime);
+
+                isAllCompleted &= flow.IsCompleted;
             }
+
+            Game1.Title = $"{isAllCompleted}";
         }
 
         public override void Draw(SpriteBatch sb)

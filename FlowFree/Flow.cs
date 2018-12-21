@@ -38,7 +38,7 @@ namespace FlowFree
         Rectangle StartHitBox;
         Rectangle EndHitBox;
 
-        bool wasStartClicked;
+        bool shouldAddFromHead;
 
         public Flow(Color color, Point start, Point end, int cellsize, float scale)
         {
@@ -81,42 +81,93 @@ namespace FlowFree
             Scale = scale;
         }
 
-        public FlowPiece FindPiece(Point pos)
+        public LinkedListNode FindPiece(Point pos)
         {
             var curr = Pieces.Head;
             while (curr != null)
             {
                 if (curr.Value.ArrayPosition == pos)
                 {
-                    return curr.Value;
+                    return curr;
                 }
                 curr = curr.Next;
             }
 
+            curr = Pieces.Tail;
+            while(curr != null)
+            {
+                if(curr.Value.ArrayPosition == pos)
+                {
+                    return curr;
+                }
+                curr = curr.Prev;
+            }
+
             return null;
         }
-
-
-
+        
         public void Update(GameTime gameTime)
         {
             (int x, int y) = MouseCell(CellSize);
           
+
             if (Game1.MouseState.LeftButton == ButtonState.Pressed && !shouldAdd)
             {
                 if (StartHitBox.Contains(Game1.MouseState.Position))
                 {
                     Pieces.Reset();
 
-                    wasStartClicked = true;
-                    shouldAdd = true;
+                    shouldAddFromHead = true;
+                    if (Game1.OldMouseState.LeftButton == ButtonState.Released)
+                    {
+                        Board.CurrentColorActivated = Color;
+                        shouldAdd = true;
+                    }
                 }
                 else if (EndHitBox.Contains(Game1.MouseState.Position))
                 {
                     Pieces.Reset();
 
-                    wasStartClicked = false;
-                    shouldAdd = true;
+                    shouldAddFromHead = false;
+                    if (Game1.OldMouseState.LeftButton == ButtonState.Released)
+                    {
+                        Board.CurrentColorActivated = Color;
+                        shouldAdd = true;
+                    }
+                }
+                //logic
+                //check if some flow piece of that color was pressed
+                //if it was, check which direction it was going.
+                //i.e check if it came from head or tail, by checking
+                //which path is not null
+                else if (Board.CurrentColorActivated == Color || Board.CurrentColorActivated == Color.White)
+                {
+                    var piece = FindPiece(new Point(x, y));
+                    if (piece == null) return;
+
+                    var curr = Pieces.Head;
+                    while(curr != piece)
+                    {
+                        curr = curr.Next;
+                        if (curr == null) break;
+                    }
+
+                    if(curr == null)
+                    {
+                        curr = Pieces.Tail;
+                        while(curr != piece)
+                        {
+                            curr = curr.Prev;
+                        }
+
+                        shouldAddFromHead = false;
+                        shouldAdd = true;
+                    }
+                    else
+                    {
+                        shouldAddFromHead = true;
+                        shouldAdd = true;
+                    }
                 }
             }
             if (Game1.MouseState.LeftButton == ButtonState.Released)
@@ -156,7 +207,7 @@ namespace FlowFree
                 var flowPiece = new FlowPiece(Color, PieceType.SmallDot, 0f, x, y);
                 bool isSuccess = false;
 
-                if (wasStartClicked)
+                if (shouldAddFromHead)
                 {
                     isSuccess = Pieces.AddLast(flowPiece);
                 }
@@ -168,7 +219,7 @@ namespace FlowFree
                 bool onPrevious = !isSuccess;
                 if(onPrevious && !IsCompleted)
                 {
-                    if(wasStartClicked)
+                    if(shouldAddFromHead)
                     {
                         Pieces.RemoveLast();
                     }
