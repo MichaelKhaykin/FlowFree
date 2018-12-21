@@ -132,6 +132,15 @@ namespace FlowFree
                     return;
                 }
 
+                bool isNotMyColor = Board.Grid[x, y].color != Color;
+                bool isDot = Board.Grid[x, y].type == PieceType.Dot;
+
+                if (isNotMyColor && isDot)
+                {
+                    shouldAdd = false;
+                    return;
+                }
+
                 if(Board.Grid[x, y].color != Color && Board.Grid[x, y].color != Color.White)
                 {
                     //find flow and rip out at this spot
@@ -143,16 +152,32 @@ namespace FlowFree
                         }
                     }
                 }
-                
+
+                var flowPiece = new FlowPiece(Color, PieceType.SmallDot, 0f, x, y);
+                bool isSuccess = false;
+
                 if (wasStartClicked)
                 {
-                    Pieces.AddLast(new FlowPiece(Color, PieceType.SmallDot, 0f, x, y));
+                    isSuccess = Pieces.AddLast(flowPiece);
                 }
                 else
                 {
-                    Pieces.AddLastFromTail(new FlowPiece(Color, PieceType.SmallDot, 0f, x, y));
+                    isSuccess = Pieces.AddLastFromTail(flowPiece);
                 }
-                Board.Grid[x, y] = (PieceType.SmallDot, Color);
+
+                bool onPrevious = !isSuccess;
+                if(onPrevious && !IsCompleted)
+                {
+                    if(wasStartClicked)
+                    {
+                        Pieces.RemoveLast();
+                    }
+                    else
+                    {
+                        Pieces.RemoveLastFromTail();
+                    }
+                }
+            //    Board.Grid[x, y] = (PieceType.SmallDot, Color);
             }
         }
 
@@ -293,6 +318,7 @@ namespace FlowFree
                         }
                     }
 
+                    Board.Grid[curr.Value.ArrayPosition.X, curr.Value.ArrayPosition.Y] = (curr.Value.PieceType, curr.Value.Color);
                     sb.Draw(image, pos, null, curr.Value.Color, curr.Value.Rotation.ToRadians(), new Vector2(image.Width / 2, image.Height / 2), Scale, SpriteEffects.None, 0);
                 }
             }

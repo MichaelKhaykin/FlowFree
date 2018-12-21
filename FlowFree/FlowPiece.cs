@@ -15,10 +15,10 @@ namespace FlowFree
         public Color Color;
         public PieceType PieceType;
         public float Rotation;
-     
+
         public Point ArrayPosition;
 
-        
+
         //drawX and drawY are specifically for the turn piece
         public FlowPiece(Color color, PieceType type, float rotation, int x, int y)
         {
@@ -26,8 +26,20 @@ namespace FlowFree
             PieceType = type;
             Rotation = rotation;
 
-            
+
             ArrayPosition = new Point(x, y);
         }
+
+
+        public static bool operator ==(FlowPiece left, FlowPiece right)
+        {
+            return left.ArrayPosition == right.ArrayPosition;
+        }
+
+        public static bool operator !=(FlowPiece left, FlowPiece right)
+        {
+            return !(left == right);
+        }
+
     }
 }
