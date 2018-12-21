@@ -61,7 +61,7 @@ namespace FlowFree
             {
                 [PieceType.Dot] = Content.Load<Texture2D>("dot"),
                 [PieceType.Line] = Content.Load<Texture2D>("flowline"),
-                [PieceType.Turn] = Content.Load<Texture2D>("FlowCorner"),
+                [PieceType.Turn] = Content.Load<Texture2D>("flowcorner"),
                 [PieceType.DotWithHalf] = Content.Load<Texture2D>("DotHalf"),
                 [PieceType.SmallDot] = Content.Load<Texture2D>("smalldot")
             };

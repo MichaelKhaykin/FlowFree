@@ -15,6 +15,7 @@ namespace FlowFree
         None,
         Dot,
         Line,
+        HalfLine,
         Turn,
         DotWithHalf,
         SmallDot

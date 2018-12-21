@@ -129,10 +129,13 @@ namespace FlowFree
                 while (curr.Value.ArrayPosition != pos)
                 {
                     curr = curr.Prev;
-                    //IF THIS IF STATEMENT HITS BIG PROBLEMS
-                    if (curr == null) throw new Exception("Big problems");
+                    if (curr == null) break;
                 }
             }
+            
+
+            if (curr == null) return;
+
 
             if (curr.Prev != null)
             {

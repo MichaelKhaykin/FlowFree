@@ -177,7 +177,6 @@ namespace FlowFree
                         Pieces.RemoveLastFromTail();
                     }
                 }
-            //    Board.Grid[x, y] = (PieceType.SmallDot, Color);
             }
         }
 
